@@ -1,0 +1,200 @@
+---
+slug:  Ajax
+title: 手写Ajax
+authors: [scypurple]
+tags: [Ajax, 手写题, js]
+---
+
+
+# Ajax
+
+## 原生Ajax
+
+```js
+// <button id='btn'></button>
+const btn = document.querySelector("#btn");
+btn.onclick = () => {
+  const xhr = new XMLHttpRequest();
+  xhr.onreadystatechange = () => {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      console.log(xhr.response);
+    }
+  }
+  xhr.open('GET', 'http://www.scypurple.com/?name=lore&age=18');
+  // xhr.open('POST', 'http://www.scypurple.com/')
+  // 携带body参数，post也有get的两种参数携带方式
+  // xhr.send({name:'lore', age:18}) // 或者 name=lore&age=18  
+  xhr.send();
+}
+```
+
+
+
+## 跨域问题
+
+### jsonp绕过cros
+
+#### server
+
+```js
+const express = require("express");
+
+const app = express();
+const port = 8080;
+app.get('/test', (req, res) => {
+    const {callback} = req.query;
+    console.log(callback);
+    const mine = {name:'lore', age:18};
+    res.send(`${callback}(${JSON.stringify(mine)})`);
+})
+
+app.listen(port, (err) => {
+    if(!err) {
+    console.log(`listening at ${port}`);
+    }
+})
+```
+
+#### client
+
+```html
+<body>
+	<button id="btn">click me!</button>
+	<script type="text/javascript">
+		let btn = document.getElementById("btn");
+		btn.onclick = () => {
+			let scriptNode = document.createElement("script");
+			scriptNode.setAttribute("src", "http://localhost:8080/test?callback=fn");
+			document.body.appendChild(scriptNode);
+			window.fn = person => console.log(person);
+		}
+	</script>
+
+</body>
+```
+
+### cors
+
+```js
+app.get('/test', (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'http://127.0.0.1:5500');
+    res.send('hello');
+})
+```
+
+## 手写基于Promise的 Ajax
+
+```js
+const ajax = (method,url) => {
+    return new Promise((res, rej) => {
+        const xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = () => {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) res(xhr.response);
+                else rej('error');
+            }
+        }
+        xhr.open(method, url);
+        xhr.send();
+    })
+}
+```
+
+#### then链式调用
+
+```js
+const btn = document.querySelector("#btn")
+btn.onclick = () => {
+    const method = 'GET';
+    const url = 'http://api.h-camel.com/api?mod=interview&ctr=issues&act=today';
+    ajax(method, url)
+        .then(resp => { console.log(resp); return ajax(method, url) })
+        .then(resp => { console.log(resp); return ajax(method, url) })
+        .then(resp => console.log(resp))
+        .catch(err => err.message);
+}
+```
+
+#### async await
+
+```js
+btn.onclick = async () => {
+    const method = 'GET';
+    const url = 'http://api.h-camel.com/api?mod=interview&ctr=issues&act=today';
+    try {
+        const res1 = await ajax(method, url);
+        console.log(res1)
+        const res2 = await ajax(method, url);
+        console.log(res2)
+        const res3 = await ajax(method, url);
+        console.log(res3)
+    }
+    catch (e) {
+        console.log(e);
+    }
+}
+```
+
+## axios
+
+### axios.create
+
+```js
+const anotherAxios = axios.create({
+  timeout: 2000,
+  baseURL: 'http://localhost:8080'
+})
+anotherAxios.get('/post');
+```
+
+
+
+### 响应器和拦截器
+
+```js
+import axios from 'axios';
+
+const btn = document.querySelector("#btn")
+const ul = document.createElement("ul");
+document.body.appendChild(ul);
+axios.defaults.baseURL = 'http://localhost:8080'
+//axios.interceptors.request.use(config => {xxx; return configChange})
+axios.interceptors.response.use(resp => resp.data[0], err => {
+    alert(err);
+    return new Promise(() => {});
+});
+btn.onclick = async () => {
+    const res = await axios.get('/person', { params: { age: 18 } });
+    const { name, age } = res
+    ul.innerHTML = `<li>${name}</li><li>${age}</li>`
+}
+```
+
+### Abortcontroller 和拦截器
+
+```js
+import axios from 'axios';
+
+const btn = document.querySelector("#btn");
+axios.defaults.baseURL = 'http://localhost:8080'
+let controller;
+axios.interceptors.request.use(config => {
+    if (controller) controller.abort(); //在底层做了处理 if (!request) return; 如果没有请求 不取消
+    controller = new AbortController();
+    config.signal = controller.signal;
+    return config;
+})
+
+axios.interceptors.response.use(resp => resp.data, err => {
+    //alert(err);
+    return new Promise(() => {});
+});
+
+btn.onclick = async () => {
+    const res = await axios.get('/test1', {params: {delay: 3000}});
+    console.log(res);
+}
+```
+
+
+

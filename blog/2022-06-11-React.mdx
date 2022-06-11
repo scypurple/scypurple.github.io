@@ -1,0 +1,739 @@
+---
+slug:  React
+title: React - The JavaScript Framework
+authors: [scypurple]
+tags: [react, jsx]
+---
+
+## 组件属性
+
+### state
+
++ 组件类中主动定义的事件回调，必须写成赋值语句+箭头函数，避免了`this` 为`undefined`
++ 改变`state`调用`render()`
+
+```react
+       class Weather extends React.Component {
+           state = {isHot: true}
+           render() {
+               const {isHot} = this.state;
+               return <h1 id="h1" onClick={this.handleClick}>today is a {isHot ? 'sunday' : 'rainy'} day!!</h1>;
+           }
+
+           handleClick = () => this.setState({isHot: !(this.state.isHot)});
+       }
+       ReactDOM.render(<Weather/>, document.getElementById("test"));
+```
+
+### props
+
++ 限制`props`需要使用`static`
+
+```react
+// 须引入 props 库
+        class Demo extends React.Component {
+            static propTypes = {
+                name: PropTypes.string.isRequired,
+                age:  PropTypes.number,
+                sex:  PropTypes.string,  
+            }
+            render() {
+                const {name, age, sex} = this.props;
+                return (
+                    <div>
+                        <ul>
+                            <li>{name}</li>
+                            <li>{age}</li>
+                            <li>{sex}</li>
+                        </ul>
+                    </div>
+                )
+            }
+
+        }
+        const person = {
+            name: 'lore',
+            age: 26,
+            sex: 'male',
+        }
+        ReactDOM.render(<Demo {...person}/>, document.getElementById("test"));
+```
+
+
+
+### refs
+
+#### 字符串形式的ref
+
+```react
+        class Demo extends React.Component {
+            render() {
+                return (
+                    <div>
+                        <input type="text" ref="input"/>
+                        <button onClick={this.show}>click me!</button>
+                    </div>
+                )
+            }
+
+            show = () => console.log(this.refs.input.value);
+        }
+```
+
+#### 回调形式的ref
+
+```react
+class Demo extends React.Component {
+						render() {
+                return (
+                    <div>
+                        <input type="text" ref={c => this.input = c}/>
+                        <button onClick={this.show}>click me!</button>
+                    </div>
+                )
+            }
+
+            show = () => console.log(this.input.value);
+        }
+```
+
+#### createRef形式的ref
+
+```react
+class Demo extends React.Component {
+  container = React.createRef();
+  render() {
+    return (
+    	<div>
+      	<input type="text" ref={this.container}></input>
+        <button onClick={this.show}>click me!</button>
+      </div>
+    )
+}
+  show = () => this.container.current.value;
+}
+```
+
+### 受控组件
+
++ 使用 `state`控制的组件
+
+```react
+ class Demo extends React.Component {
+            state = {
+                username: '',
+                password: '',
+            }
+            render() {
+                return (
+                    <form onSubmit={this.handleLogin}>
+                        <input type="text" onChange={this.saveFormData('username')} />
+                        <input type="password" onChange={this.saveFormData('password')} />
+                        <button>Login in</button>
+                    </form>
+                )
+            }
+// 柯里化 f(type)(event)
+            saveFormData = (type) => {
+                return event => this.setState({[type]: event.target.value});
+            }
+
+            handleLogin = (event) => {
+                event.preventDefault();
+                console.log(this.input.value);
+            }
+        }
+```
+
+## 组件生命周期
+
+### componentDidMount()
+
++ 一般做一些初始化的事情
+  + 开启定时器
+  + 发送ajax请求
+  + 消息订阅
+
+### render()
+
++ render 在执行过程中并不会去操作真实 DOM（也就是说不会渲染），它的职能是**把需要渲染的内容返回出来**。真实 DOM 的渲染工作，在挂载阶段是由 ReactDOM.render 来承接的。
+
+### componentWillUnmount()
+
++ 收尾
+  + 关闭定时器
+  + 取消消息订阅
+
+### Updating 
+
++ `componentWillUpdate()`
++ `getSnapshotBeforeUpdate()`
+
+### 为什么要改生命周期？
+
++ **Fiber** 架构铺路
+
+  > **同步渲染的递归调用栈是非常深的**，只有最底层的调用返回了，整个渲染过程才会开始逐层返回。**这个漫长且不可打断的更新过程，将会带来用户体验层面的巨大风险：\**同步渲染一旦开始，便会牢牢抓住主线程不放，直到递归彻底完成。在这个过程中，浏览器没有办法处理任何渲染之外的事情，会进入一种\**无法处理用户交互**的状态。因此若渲染时间稍微长一点，页面就会面临卡顿甚至卡死的风险。
+  >
+  > 而 React 16 引入的 Fiber 架构，恰好能够解决掉这个风险：**Fiber 会将一个大的更新任务拆解为许多个小任务**。每当执行完一个小任务时，**渲染线程都会把主线程交回去**，看看有没有优先级更高的工作要处理，确保不会出现其他任务被“饿死”的情况，进而避免同步渲染带来的卡顿。在这个过程中，**渲染线程不再“一去不回头”，而是可以被打断的**，这就是所谓的“异步渲染”
+
++ fiber 架构下，render前的异步请求会导致非常严重的 Bug （异步中的异步 => 不可预测）
+
+## React Router 
+
+#### Q1: 为什么父路由会覆盖子路由
+
+```react
+// 为什么父路由会覆盖子路由
+const App = () => (
+	<>
+  <Routes>
+  	<Route path="home" element={<Home />}>
+    	<Route path="shop" element={<Shop />} />
+    </Route>
+  </Routes>
+  </>
+)
+```
+
+
+
+## 组件间通信
+
+> UI = render(data / state)   或 UI = f(data)
+
+### props
+
++ 父子组件通信
+
+### 消息订阅与发布
+
+#### 发布-订阅模型 API 设计思路
+
+发布-订阅模式中有两个关键的动作：事件的监听（订阅）和事件的触发（发布），这两个动作自然而然地对应着两个基本的 API 方法。
+
++ on()：负责注册事件的监听器，指定事件触发时的回调函数。
+
++ emit()：负责触发事件，可以通过传参使其在触发的时候携带数据 。
+
+
+最后，只进不出总是不太合理的，我们还要考虑一个 off() 方法，必要的时候用它来删除用不到的监听器：
+
++ off()：负责监听器的删除。
+
+### Redux
+
+> Redux 是 JavaScript 状态容器，它提供可预测的状态管理。
+
+在 Redux 的整个工作过程中，数据流是严格单向的
+
++ 对数据的修改只能通过：派发 action 实现
++ reducer 读取，生成新的 `state`
++ 更新到`store`对象里
+
+1. 使用 createStore 来完成 store 对象的创建
+   1. reducer [参数]
+   2. 初始化 state
+   3. 指定中间件
+2. reducer 的作用式将新的 state 返回给 store
+
+### createStore 内部逻辑
+
+---
+
+![image-20220310174827819](https://s2.loli.net/2022/03/10/DivWUBoTSH5EJO3.png)
+
+---
+
+###  dispatch 工作流程
+
+---
+
+![image-20220310175046108](https://s2.loli.net/2022/03/10/KaWQA2N7HkBDfRy.png)
+
+---
+
+### subscribe 工作流程
+
+---
+
+![image-20220310175220579](https://s2.loli.net/2022/03/10/EmkX7MprRDqzblt.png)
+
++ **currentListeners 在此处的作用，就是为了记录下当前正在工作中的 listeners 数组的引用**，**将它与可能发生改变的 nextListeners 区分开来，以确保监听函数在执行过程中的稳定性**。
+
+---
+
+### applyMiddleware 与 Redux 中间件
+
+“切面”与业务逻辑是分离的，因此 AOP 是一种典型的 **“非侵入式”的逻辑扩充思路**。
+
+在日常开发中，像“日志追溯”“异步工作流处理”“性能打点”这类和业务逻辑关系不大的功能，我们都可以考虑把它们抽到“切面”中去做。
+
+面向切面编程带来的利好是非常明显的。从 Redux 中间件机制中，不难看出，面向切面思想在很大程度上提升了我们组织逻辑的灵活度与干净度，帮助我们规避掉了逻辑冗余、逻辑耦合这类问题。通过将“切面”与业务逻辑剥离，开发者能够专注于业务逻辑的开发，并通过“**即插即用**”的方式自由地组织自己想要的扩展功能。
+
+
+
+## Hooks
+
+### Why Hooks
+
+#### 类组件
+
++ 面向对象的：继承，封装
++ 重
++ 由于开发者编写的逻辑在**封装**后是和组件粘在一起的，这就使得类**组件内部的逻辑难以实现拆分和复用。**如果你想要打破这个僵局，则需要进一步学习更加复杂的设计模式（比如高阶组件、Render Props 等），用更高的学习成本来交换一点点编码的灵活度。
++ 为了解决 this 不符合预期的问题，各路前端也是各显神通，之前用 bind、现在推崇箭头函数。但不管什么招数，**本质上都是在用实践层面的约束来解决设计层面的问题**。
+
+#### 函数组件 / 无状态组件
+
++ 函数式编程
++ 轻量，可组装
++ 解决业务逻辑难以拆分的问题；
++ 使状态逻辑复用变得简单可行；
++ 函数组件从设计思想上来看，更加契合 React 的理念。
+
+---
+
+> **函数组件会捕获 render 内部的状态，这是两类组件最大的不同。 ** 
+>
+> 基于 Js 闭包
+
+---
+
+> **类组件和函数组件之间，纵有千差万别，但最不能够被我们忽视掉的，是心智模式层面的差异**，是面向对象和函数式编程这两套不同的设计思想之间的差异。说得更具体一点，**函数组件更加契合 React 框架的设计理念**
+>
+> **UI = f(data)**
+>
+> **函数组件真正地把数据和渲染绑定到了一起**。
+>
+> **UI = f(data)**
+
+---
+
+### Hooks 的局限性
+
+- **Hooks 暂时还不能完全地为函数组件补齐类组件的能力**
+- **“轻量”几乎是函数组件的基因，这可能会使它不能够很好地消化“复杂”**：我们有时会在类组件中见到一些方法非常繁多的实例，如果用函数组件来解决相同的问题，业务逻辑的拆分和组织会是一个很大的挑战。我个人的感觉是，从头到尾都在“过于复杂”和“过度拆分”之间摇摆不定，哈哈。耦合和内聚的边界，有时候真的很难把握，**函数组件给了我们一定程度的自由，却也对开发者的水平提出了更高的要求**。
+- **Hooks 在使用层面有着严格的规则约束**：对于如今的 React 开发者来说，如果不能牢记并践行 Hooks 的使用原则，如果对 Hooks 的关键原理没有扎实的把握，很容易把自己的 React 项目搞成大型车祸现场。
+  - 只在 React 函数中调用 Hook；
+  - 不要在循环、条件或嵌套函数中调用 Hook。确保 Hooks 在每次渲染时都保持同样的执行顺序
+
+> **为什么顺序如此重要？**
+>
+> Hooks 的正常运作，在底层依赖于顺序链表
+
+---
+
+![image-20220310164259186](https://s2.loli.net/2022/03/10/2TzFyHdwnJcWQRE.png)
+
+---
+
+## 虚拟 dom 与 diff算法
+
+### 栈调和
+
+1. 栈调和就是将虚拟DOM映射到真实DOM的过程
+2. 调和 !== diff, diff 只是调和过程的一个步骤
+3. diff的理解:">diff算法就是找两个树的不同，差量更新，并将时间复杂度从n的3次方降为n，只要实现可以分为以下几点：
+   1. 分层处理：分层处理是关键点，同层级才会进行比较，跨层级的直接跳过diff，销毁旧的，重建新的
+   2. 类型相同的节点才有diff的必要性：类型不同直接原地替换旧的
+   3. key属性：key作为唯一标识，可以减少同一层级的节点的不必要比较
+
+### Why Virtual DOM？
+
++ 允许程序员只关心数据而不必关心 DOM 细节
+
+---
+
+![image-20220310165038749](https://s2.loli.net/2022/03/10/45ycUh1Csg9NOKA.png)
+
+---
+
++ **虚拟 DOM 的优越之处在于，它能够在提供更爽、更高效的研发模式（也就是函数式的 UI 编程方式）的同时，仍然保持一个还不错的性能**。
++ 虚拟 DOM 解决的关键问题有以下两个。
+  1. 研发体验/研发效率的问题：这一点前面已经反复强调过，DOM 操作模式的每一次革新，背后都是前端对效率和体验的进一步追求。虚拟 DOM 的出现，为数据驱动视图这一思想提供了高度可用的载体，使得前端开发能够基于函数式 UI 的编程方式实现高效的声明式编程。
+  2. 跨平台的问题：虚拟 DOM 是对真实渲染内容的一层抽象。若没有这一层抽象，那么视图层将和渲染平台紧密耦合在一起，为了描述同样的视图内容，你可能要分别在 Web 端和 Native 端写完全不同的两套甚至多套代码。但现在中间多了一层描述性的虚拟 DOM，它描述的东西可以是真实 DOM，也可以是iOS 界面、安卓界面、小程序......同一套虚拟 DOM，可以对接不同平台的渲染逻辑，从而实现“一次编码，多端运行”，如下图所示。其实说到底，跨平台也是研发提效的一种手段，它在思想上和1是高度呼应的。
+
+### diff 算法
+
+![image-20220310165615251](https://s2.loli.net/2022/03/10/3bLucmfXx51Q2TA.png)
+
+---
+
+### setState 是同步还是异步？
+
+---
+
+![image-20220310171450365](https://s2.loli.net/2022/03/10/mHPtDpRq3n5xjSQ.png)
+
+---
+
++ 函数式组件`useState` reduce 的结果则是相同 --> 闭包
+
+> 函数组件里面的useState只会把某次执行时的state赋值给某个变量，是不变的，你在当前上下文只能获取当前状态切片的state，修改后的是在下一次执行上下文里获取的，所以react文档里说依赖了哪些state，就一定要在[]里写上，不然实际开发中可能会遇到“缓存”bug。
+
+## Fiber
+
+### 前置知识：单线程的 JavaScript 与多线程的浏览器
+
+大家在入门前端的时候，想必都听说过这样一个结论：JavaScript 是单线程的，浏览器是多线程的。
+
+对于多线程的浏览器来说，它除了要处理 JavaScript 线程以外，还需要处理包括事件系统、定时器/延时器、网络请求等各种各样的任务线程，这其中，自然也包括负责处理 DOM 的**UI 渲染**线程。而 **JavaScript 线程是可以操作 DOM 的**。
+
+这意味着什么呢？试想如果渲染线程和 JavaScript 线程同时在工作，那么渲染结果必然是难以预测的：比如渲染线程刚绘制好的画面，可能转头就会被一段 JavaScript 给改得面目全非。这就决定了**JavaScript 线程和渲染线程必须是互斥的**：这两个线程不能够穿插执行，必须串行。**当其中一个线程执行时，另一个线程只能挂起等待**。
+
+具有相似特征的还有事件线程，浏览器的 Event-Loop 机制决定了事件任务是由一个异步队列来维持的。当事件被触发时，对应的任务不会立刻被执行，而是由事件线程把它添加到任务队列的末尾，**等待 JavaScript** 的同步代码执行完毕后，在空闲的时间里执行出队。
+
+在这样的机制下，若 JavaScript 线程长时间地占用了主线程，那么**渲染层面的更新就不得不长时间地等待，界面长时间不更新，带给用户的体验就是所谓的“卡顿”**。一般页面卡顿的时候，你会做什么呢？我个人的习惯是更加频繁地在页面上点来点去，期望页面能够给我哪怕一点点的响应。遗憾的是，**事件线程也在等待 JavaScript，这就导致你触发的事件也将是难以被响应的**。
+
+### 为什么会产生“卡顿”困局
+
+---
+
+![image-20220310173227523](https://s2.loli.net/2022/03/10/OlaKBhpkUT8DRWQ.png)
+
+---
+
+### 设计思想：Fiber 是如何解决问题的
+
+---
+
+![image-20220310173510385](https://s2.loli.net/2022/03/10/s9amTG8tVb1YoA2.png)
+
+---
+
+### current 树 与 workInProgress 树：“双缓冲”模式在 Fiber 架构下的实现
+
+#### 什么是“双缓冲”模式
+
+“双缓冲”模式其实是一种在游戏领域由来已久的经典设计模式。为了帮助你快速理解它，这里我先举一个生活中的例子：假如你去看一场总时长只有 1 个小时的话剧，这场话剧中场不休息，需要不间断地演出。
+
+按照剧情的需求，半个小时处需要一次转场。所谓转场，就是说话剧舞台的灯光、布景、氛围等全部要切换到另一种风格里去。在不中断演出的情况下，想要实现转场，怎么办呢？场务工作做得再快，也要十几二十分钟，这对一场时长 1 小时的话剧来说，实在太漫长了。观众也无法接受这样的剧情“卡顿”体验。
+
+有一种解法，那就是**准备两个舞台**来做这场戏，当第一个舞台处于使用中时，第二个舞台的布局已经完成。这样当第一个舞台的表演结束时，只需要把第一个舞台的灯光灭掉，第二个舞台的灯光亮起，就可以做到剧情的无缝衔接了。
+
+事实上，在真实的话剧中，我们也确实常常看到这样的画面——演员从舞台的左侧走到了右侧，灯光一切换，就从卧室（左侧舞台）走到了公园（右侧舞台）；又从公园（右侧舞台）走到了办公室（左侧舞台）。左侧舞台的布景从卧室变成了办公室，这个过程正是在演员利用右侧舞台表演时完成的。
+
+在这个过程中，我们可以认为，**左侧舞台和右侧舞台分别是两套缓冲数据，而呈现在观众眼前的连贯画面，就是不同的缓冲数据交替被读取后的结果**。
+
+在计算机图形领域，通过让图形硬件交替读取两套缓冲数据，可以实现画面的无缝切换，减少视觉效果上的抖动甚至卡顿。而在 React 中，双缓冲模式的主要利好，则是**能够帮我们较大限度地实现 Fiber 节点的复用**，从而减少性能方面的开销。
+
+#### current 树与 workInProgress 树之间是如何“相互利用”的
+
+在 React 中，current 树与 workInProgress 树，两棵树可以对标“双缓冲”模式下的两套缓冲数据：当 current 树呈现在用户眼前时，所有的更新都会由 workInProgress 树来承接。workInProgress 树将会在用户看不到的地方（内存里）悄悄地完成所有改变，直到“灯光”打到它身上，也就是 current 指针指向它的时候，此时就意味着 commit 阶段已经执行完毕，workInProgress 树变成了那棵呈现在界面上的 current 树。
+
+---
+
+## 性能调优
+
+**原理都是减少 render 的次数**
+
++ **使用 shouldComponentUpdate 规避冗余的更新逻辑**
++ **PureComponent + Immutable.js**
++ **React.memo 与 useMemo**
+
+## React 设计模式
+
+**目的都是实现组件逻辑的复用**
+
+- **高阶组件（HOC）**
+- **Render Props**
+- **剥离有状态组件与无状态组件**
+
+高阶组件指的就是**参数为组件，返回值为新组件的函数**。没错，**高阶组件本质上是一个函数**。下面是一个简单的高阶组件示例：
+
+```react
+const withProps = (WrappedComponent) => {
+    const targetComponent = (props) => (
+        <div className="wrapper-container">
+            <WrappedComponent {...props} />
+        </div>
+    );
+    return targetComponent;
+};
+```
+
+在这段代码中，withProps 就是一个高阶组件。
+
+#### 高阶组件是如何实现逻辑复用的？
+
+现在我们考虑这样一种情况：我有一个名为 checkUserAccess 的方法，这个方法专门用来校验用户的身份是否合法，若不合法，那么一部分组件就要根据这个不合法的身份调整自身的展示逻辑（比如查看个人信息界面需要提示“请校验身份”等）。
+
+假如说页面中的 A、B、C、D、E 五个组件都需要甄别用户身份是否合法，那么这五个组件在理论上都需要先请求一遍 checkUserAccess 这个接口。但一个一个对组件进行修改未免太麻烦了，我们期望对“获取 checkUserAccess 接口信息，并通知到对应组件”这层逻辑进行复用，这时候就可以请出高阶组件来帮忙了。
+
+我们可以像下面代码这样在高阶组件中定义这层通用的逻辑：
+
+```react
+// 假设 checkUserAccess 已经在 utils 文件中被封装为了一段独立的逻辑
+import checkUserAccess from './utils
+// 用高阶组件包裹目标组件
+const withCheckAccess = (WrappedComponent) => {
+    // 这部分是通用的逻辑：判断用户身份是否合法
+    const isAccessible = checkUserAccess()  
+    // 将 isAccessible（是否合法） 这个信息传递给目标组件
+    const targetComponent = (props) => (
+        <div className="wrapper-container">
+            <WrappedComponent {...props} isAccessible={isAccessible} />
+        </div>
+    );
+    return targetComponent;
+};
+```
+
+这样当我们需要为某个组件复用这层请求逻辑的时候，只需要直接用 withCheckAccess 包裹这个组件就可以了。以 A 组件为例，假设 A 组件的原始版本为 AComponent，那么包裹它的形式就是下面代码这样：
+
+```react
+const EnhancedAComponent = withCheckAccess(Acomponent);
+```
+
+### Render Props：逻辑复用的另一种思路
+
+> 术语[“render prop”](https://cdb.reacttraining.com/use-a-render-prop-50de598f11ce)是指一种在 React 组件之间使用一个值为函数的 prop 共享代码的简单技术。——React 官方
+
+#### 什么是 render props？
+
+render props 是 React 中复用组件逻辑的另一种思路，它在实现上和高阶组件有异曲同工之妙——两者都是把通用的逻辑提取到某一处。区别主要在于使用层面，**高阶组件的使用姿势是用“函数”包裹“组件”，而 render props 恰恰相反，它强调的是用“组件”包裹“函数”**。
+
+一个简单的 render props 可以是这样的，见下面代码：
+
+```react
+import React from 'react'  
+const RenderChildren = (props) => {
+  return(
+     <React.Fragment>
+        {props.children(props)}
+     </React.Fragment>
+  );
+};
+```
+
+RenderChildren 将渲染它所有的子组件。从这段代码里，你需要把握住两个要点：
+
+1. render props 的载体应该是一个**React 组件**，这一点是与高阶组件不同的（高阶组件本质是函数）；
+2. render props 组件正常工作的前提是它的**子组件需要以函数形式存在**。
+
+第 1 点相对明显一点，你可能会对第 2 点感到迷惑。没关系，我们直接来看 RenderChildren 的使用方式，请看下面代码：
+
+```react
+<RenderChildren>         
+  {() => <p>我是 RenderChildren 的子组件</p>}       
+</RenderChildren>
+```
+
+RenderChildren 本身是一个 React 组件，它可以包裹其他的 React 组件。一般来说，我们习惯于看到的包裹形式是“标签包裹着标签”，也就是下面代码演示的这种效果：
+
+```react
+<RenderChildren>         
+  <p>我是 RenderChildren 的子组件</p>     
+</RenderChildren>
+```
+
+但在 render props 这种模式下，它要求被 render props 组件标签包裹的一定是个函数，也就是所谓的“函数作为子组件传入”。这样一来，render props 组件就可以通过调用这个函数，传递 props，从而实现和目标组件的通信了。
+
+#### render props 是如何实现逻辑复用的？
+
+这里我仍然以 checkUserAccess 这个场景举例。使用 render props 复用 checkUserAccess 这段逻辑，我们可以这样做，请看下面代码：
+
+```react
+// 假设 checkUserAccess 已经在 utils 文件中被封装为了一段独立的逻辑
+import checkUserAccess from './utils
+// 定义 render props 组件
+const CheckAccess = (props) => {
+    // 这部分是通用的逻辑：判断用户身份是否合法
+    const isAccessible = checkUserAccess()  
+    // 将 isAccessible（是否合法） 这个信息传递给目标组件
+    return <React.Fragment>
+        {props.children({ ...props, isAccessible })}
+      </React.Fragment>
+};
+```
+
+接下来 CheckAccess 子组件就可以这样获取 isAccessible 的值，见下面代码：
+
+```react
+<CheckAccess>
+  {
+    (props) => {
+      const { isAccessible } = props;
+      return <ChildComponent {...props} isAccessible={isAccessible} />
+    }
+  }
+</CheckAccess>
+```
+
+到这里，“函数作为子组件传入”这种情况，我们已经了解了它的来龙去脉。但其实，对于  render props 这种模式来说，**函数并不一定要作为子组件传入，它也可以以任意属性名传入，只要 render props 组件可以感知到它就行**。
+
+举个例子，我可以允许函数通过一个名为 checkTaget 的属性传入 render props 组件，那么 CheckAccess 组件只需要改写一下它接收函数的形式即可，见下面代码：
+
+```react
+// 假设 checkUserAccess 已经在 utils 文件中被封装为了一段独立的逻辑
+import checkUserAccess from './utils
+// 定义 render props 组件
+const CheckAccess = (props) => {
+    // 这部分是通用的逻辑：判断用户身份是否合法
+    const isAccessible = checkUserAccess()  
+    // 将 isAccessible（是否合法） 这个信息传递给目标组件
+    return <React.Fragment>
+        {props.checkTaget({ ...props, isAccessible })}
+      </React.Fragment>
+};
+```
+
+在使用 CheckAccess 组件的时候，我们将函数放在 checkTaget 中传入组件即可，见下面代码：
+
+```react
+<CheckAccess
+    checkTaget={(props) => {
+      const { isAccessible } = props;
+      return <ChildComponent {...props} isAccessible={isAccessible} />
+    }}
+  />
+```
+
+像这样使用 render props，也是完全可以的。
+
+#### 理解 render props 的灵活之处
+
+读到这里，你不免会产生这样的困惑：高阶组件和 render props 都能复用逻辑，那我到底用哪个好呢？
+
+这里我先给出结论：render props 将是你更好的选择，因为它**更灵活**。这“更灵活”从何说起呢？
+
+render props 和高阶组件一个非常重要的区别，在于对数据的处理上：在高阶组件中，目标组件对于数据的获取没有主动权，**数据的分发逻辑全部收敛在高阶组件的内部**；而在 render props 中，除了父组件可以对数据进行分发处理之外，**子组件也可以选择性地对数据进行接收**。
+
+这样说你可能会觉得有点抽象，我举个例子：假如说我们现在多出一个 F 组件，它同样需要 checkUserAccess 这段逻辑。但是这个 F 组件是一个老组件，它识别不了 props.isAccessible，只认识 props.isValidated。带着这个需求，我们先来看看高阶组件怎么解决问题。原有的高阶组件逻辑是下面这样的：
+
+```react
+// 假设 checkUserAccess 已经在 utils 文件中被封装为了一段独立的逻辑
+import checkUserAccess from './utils
+// 用高阶组件包裹目标组件
+const withCheckAccess = (WrappedComponent) => {
+    // 这部分是通用的逻辑：判断用户身份是否合法
+    const isAccessible = checkUserAccess()  
+    // 将 isAccessible（是否合法） 这个信息传递给目标组件
+    const targetComponent = (props) => (
+        <div className="wrapper-container">
+            <WrappedComponent {...props} isAccessible={isAccessible} />
+        </div>
+    );
+    return targetComponent;
+};
+```
+
+它会不由分说地给所有组件安装上 isAccessible 这个变量。要想让它适配 F 组件的逻辑，最直接的一个思路就是在 withCheckAccess 中增加一个组件类型的判断，一旦判断出当前入参是 F 组件，就专门将 isAccessible 改名为 isValidated。
+
+这样做虽然能够暂时解决问题，但这并不是一个灵活的解法：假如需要改属性名的组件越来越多，那么 withCheckAccess 内部将不可避免变得越来越臃肿，长此以往将难以维护。
+
+事实上，在软件设计模式中，有一个非常重要的原则，叫“**开放封闭原则**”。一个好的模式，应该尽可能做到**对拓展开放，对修改封闭**。
+
+当我们发现 withCheckAccess 的内部逻辑需要频繁地跟随需求的变化而变化时，此时就应该提高警惕了，因为这已经违反了“对修改封闭”这一原则。
+
+**处理同样的需求，render props 就能够在保全“开放封闭”原则的基础上，帮我们达到目的**。
+
+前面说过，在 render props 中，除了父组件可以对数据进行分发处理之外，**子组件也可以选择性地对数据进行接收**。这就意味着我们可以在新增的 F 组件相关的逻辑中把数据适配这件事情给做掉（如下面代码所示），而不会影响老的 CheckAccess 组件中的逻辑。
+
+```react
+<CheckAccess>
+  {
+    (props) => {
+      const { isAccessible } = props;
+      return <ChildComponent {...props} isValidated={isAccessible} />
+    }
+  }
+</CheckAccess>
+```
+
+这样一来，不管你新来的组件有多少个，需要变更的属性名有多少个，影响面都会被牢牢地控制在“新增逻辑”这个范畴里。契合了“开放封闭”原则的 render props 模式显然比高阶组件灵活多了。
+
+### 有状态组件与无状态组件：“单一职责”原则在组件设计模式中的实践
+
+#### 什么是“单一职责”原则？
+
+单一职责原则又叫“单一功能原则”，它指的是一个类或者模块应该有且只有一个改变的原因。通俗来讲，就是说咱们的组件功能要尽可能地聚合，不要试图让一个组件做太多的事情。
+
+#### 什么是有状态组件？什么是无状态组件？
+
+无状态组件这个概念我们在第 06 讲中已经介绍过了，这里简单复习一下：
+
+> 函数组件顾名思义，就是以函数的形态存在的 React 组件。早期并没有 React-Hooks 的加持，函数组件内部无法定义和维护 state，因此它还有一个别名叫“无状态组件”。
+
+如下面代码所示，就是一个典型的无状态组件：
+
+```react
+function DemoFunction(props) {
+  const { text } = props
+  return (
+    <div className="demoFunction">
+      <p>{`function 组件所接收到的来自外界的文本内容是：[${text}]`}</p>
+    </div>
+  );
+}
+```
+
+无状态组件不一定是函数组件，不维护内部状态的类组件也可以被认为是无状态组件。
+相比之下，能够在组件内部维护状态、管理数据的组件，就是“有状态组件”。
+
+#### 为何需要剥离有状态组件和无状态组件？
+
+有状态组件和无状态组件有很多别名，有的书籍里也会管它们叫“容器组件”和“展示组件”，甚至“聪明组件”和“傻瓜组件”。不管叫啥，核心目的就一个——把数据处理和界面渲染这两个工作剥离开来。
+
+为什么要这样做？别忘了，React 的核心特征是“数据驱动视图”，我们经常用下图的公式来表达它的工作模式：
+
+![Lark20201225-133324.png](https://s2.loli.net/2022/03/10/mxpa94JFRIhSb12.png)
+
+因此对一个 React 组件来说，它做的事情说到底无外乎是这两件：
+
+1. 处理数据（包括数据的获取、格式化、分发等）
+2. 渲染界面
+
+我们当然也可以在一个组件里面做完这两件事情，但这样不够优雅。
+
+按照“单一职责”的原则，我们应该将数据处理的逻辑和界面渲染的逻辑剥离到不同的组件中去，这样功能模块的组合将会更加灵活，也会更加有利于逻辑的复用。此外，单一职责还能够帮助我们尽可能地控制变更范围，降低代码的维护成本：当数据相关的逻辑发生变化时，我们只需要去修改有状态组件就可以了，无状态组件将完全不受影响。
+
+### Why Hooks：设计模式解决不了所有的问题
+
+设计模式虽好，但它并非万能。
+
+就 React 来说，无论是高阶组件，还是 render props，两者的出现都是为了弥补类组件在“逻辑复用”这个层面的不灵活性。它们各自都有着自己的不足，这些不足包括但不限于以下几点：
+
+1. 嵌套地狱问题，当嵌套层级过多后，数据源的追溯会变得十分困难
+2. 较高的学习成本
+3. props 属性命名冲突问题
+4. ......
+
+总体来看，“HOC/render props+类组件”这种研发模式，还是不够到位。当设计模式解决不了问题时，我们本能地需要从编程模式上寻找答案。于是便有了如今大家在 React 中所看到的 “函数式编程”对“面向对象”的补充（并且大有替代之势），有了今天我们所看到的“一切皆可 Hooks”的大趋势。
+
+**现在，当我们想要去复用一段逻辑时，第一反应肯定不是“高阶函数”或者“render props”，而应该是“**[自定义 Hook](https://zh-hans.reactjs.org/docs/hooks-custom.html#gatsby-focus-wrapper)**”**。Hooks 能够很好地规避掉旧时类组件中各种设计模式带来的弊端，比如说它不存在嵌套地狱，允许属性重命名、允许我们在任何需要它的地方引入并访问目标状态等。由此可以看出，一个好的编程模式可以帮我们节约掉大量“打补丁”式地学习各种组件设计模式的时间。框架设计越合理，开发者的工作就越轻松。
+
+### 总结
+
+本讲，我们围绕“React 组件设计模式”这一专题进行学习。在认识高阶组件、render props 两种经典设计模式的同时，也对“单一职责”“开放封闭”这两个重要的软件设计原则形成了初步的认识。
+
+软件领域没有银弹，就算有，也不可能是设计模式。通过本讲的学习，相信你在认识设计模式的利好之余，也认识到了它的局限性。在此基础上，相信你会对 React-Hooks 及其背后的“函数式编程”思想建立更加强烈的正面认识。
+
+## 如何深入了解一个前端框架
+
+作为团队自研前端框架方向的负责人，我在实际工作中需要调研和深扒的框架类型可能会比大家想象的多得多。那么面对一个陌生的前端框架，我们应该怎样做才能够高效且平稳地完成从“小工”到“专家”的蜕变呢？
+
+这个问题其实是没有标准答案的，它和每个人的学习习惯、学习效率甚至元认知能力都有关系。但我想总有一些具体到行为上的规律是可以复用的。今天我想和你分享的，就是一部分我在团队的新人包括实习生同学身上验证过的、可执行度较高的学习经验，希望能够对你日后的生涯道路有所帮助。
+
+#### 不要小看官方文档
+
+在实际的读者调研中，我发现很多同学对 React 官方文档不够重视。大家习惯于在入门阶段借助文档完成“快速上手”，却忽视了文档所能够提供给我们的一些更有价值的信息——比如框架的设计思想、源码分层及一些对特殊功能点的介绍。
+
+在专栏的更新过程中，我会在引用官方文档的地方标注出处，这促使了一部分同学去阅读一部分的文档内容，这是一件好事情。React 文档在前端框架文档中属于相当优秀的范本，如果你懂得利用文档，会发现它不只是一个 API 手册或是入门教程，而是一套成体系的官方教学。
+
+如果专栏中的一些文档的摘要引用使你受用，不妨尝试去阅读一下完整的原文。在日常的源码阅读包括生产实践中，如果遇到了 React 相关的问题，请不要急于去阅读参差不齐的社区文章——先问问 React 文档试试看吧，或许你能收获的会比你想象中要多。
+
+#### 调用栈就是你的学习地图
+
+若你的学习层次已经超越了阅读官方文档这个阶段，接下来可能会想要了解框架到底是如何运行的。此时你已经掌握了框架的设计理念和基本特性，也有了一些简单项目的实践经验，但或许还并不具备从头挑战源码的知识储备和心理准备。这时，在阅读源码之前，框架的函数调用栈将会给你指明许多方向性的问题。
+
+比如当你想要了解 Hooks，那么就可以尝试去观察不同 Hooks 调用所触发的函数调用栈，从中找出出镜率最高的那些函数，它们大概率暗示着 Hooks 源码的主流程。事件系统、render 过程之类的也是同理。观察调用栈，寻找共性，然后点对点去阅读关键函数的源码，这将大大降低我们阅读源码的难度。
+
+#### 如何阅读源码
+
+当你理解了一部分核心功能的源码逻辑之后，难免会对整个框架的运行机制产生好奇。这时候直接从入口文件出发去阅读所有的源码，仍然是一个不太明智的选择。
+
+在整体阅读源码之前，我们最好去复习一下框架官方对框架架构设计、源码分层相关的介绍——这些信息未必会全部暴露在文档里，但借助搜索引擎，我们总能找到一些线索——比如框架作者/官方团队的博文，其内容的权威度基本和文档持平。
+
+在理解了整个框架项目的架构分层之后，我们阅读源码的姿势就可以多样化一些了：可以尝试分层阅读，一次搞清楚一个大问题，最后再把整个思路按照架构分层的逻辑组合起来；也可以继续借助调用栈，通过观察一个完整的执行流程（比如 React 的首屏渲染过程）中所涉及的函数，自行将每个层次的逻辑对号入座，然后再向下拆分，我个人采用的就是这种办法。

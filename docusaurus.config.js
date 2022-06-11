@@ -45,7 +45,7 @@ const config = {
         // },
         docs: false,
         blog: {
-          path: './blog/',
+          path: './blog',
           routeBasePath: '/',
           showReadingTime: true,
           // Please change this to your repo.
