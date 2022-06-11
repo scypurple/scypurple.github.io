@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkdocusaurus_first_app=self.webpackChunkdocusaurus_first_app||[]).push([[695],{671:function(s){s.exports=JSON.parse('{"label":"git","permalink":"/tags/git","allTagsPath":"/tags","count":1}')}}]);
