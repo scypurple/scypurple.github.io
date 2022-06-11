@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkdocusaurus_first_app=self.webpackChunkdocusaurus_first_app||[]).push([[362],{9803:function(a){a.exports=JSON.parse('{"label":"Ajax","permalink":"/tags/ajax","allTagsPath":"/tags","count":1}')}}]);
