@@ -6,7 +6,7 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'My Site',
+  title: '希里',
   tagline: 'Dinosaurs are cool',
   url: 'https://scypurple.github.io',
   baseUrl: '/',
@@ -45,13 +45,15 @@ const config = {
         // },
         docs: false,
         blog: {
-          path: './blog',
+          path: './blog/',
           routeBasePath: '/',
           showReadingTime: true,
+          blogSidebarTitle: '全部博文',
+          blogSidebarCount: 'ALL',
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
+            'https://github.com/scypurple/scypurple.github.io/tree/master',
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
